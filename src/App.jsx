@@ -27,8 +27,104 @@ import {
 } from './examRules';
 
 const ATTENDANCE_TODAY = '17-09-2026';
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 const dmyTime = (value) => { const match=String(value||'').match(/^(\d{2})-(\d{2})-(\d{4})$/); return match?new Date(Number(match[3]),Number(match[2])-1,Number(match[1])).getTime():Number.NaN; };
 const routineDayForDate = (value) => { const match=String(value||'').match(/^(\d{2})-(\d{2})-(\d{4})$/); return match?['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date(Number(match[3]),Number(match[2])-1,Number(match[1])).getDay()]:''; };
+const apiFetch = async (path, options = {}) => {
+  if (!API_BASE_URL) throw new Error('VITE_API_BASE_URL is not configured');
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    ...options,
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.message || `API request failed: ${response.status}`);
+  return payload;
+};
+const listFromApi = (payload, key) => Array.isArray(payload?.data) ? payload.data : Array.isArray(payload?.[key]) ? payload[key] : Array.isArray(payload) ? payload : [];
+const formatApiDate = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString('en-GB').replaceAll('/', '-');
+};
+const normalizeStudent = (student) => {
+  const className = student.className || student.class || '';
+  return {
+    ...student,
+    _id: student._id,
+    id: student.admissionNo || student.id || student._id,
+    name: student.name || '',
+    guardian: student.guardian || student.fatherName || '',
+    mother: student.mother || student.motherName || '',
+    className,
+    section: student.section || className.split('-')[1] || '',
+    roll: student.roll || student.rollNo || '',
+    dob: formatApiDate(student.dob || student.DOB),
+    gender: student.gender || '',
+    mobile: student.mobile || student.mobileNumber || '',
+    address: student.address || '',
+    admission: formatApiDate(student.admission || student.admissionDate),
+    status: student.status || 'Active',
+    attendance: student.attendance || 0,
+    fee: student.fee || 'Pending',
+    pen: student.pen || student.penNo || '',
+    apaar: student.apaar || student.apaarId || '',
+    eshiksha: student.eshiksha || student.eshikshakoshId || '',
+    registration: student.registration || student.registrationNo || '',
+    bsebRegistered: Boolean(student.bsebRegistered || student.registration || student.registrationNo),
+    visibleInSession: student.visibleInSession !== false,
+  };
+};
+const normalizeStaff = (staff) => ({
+  ...staff,
+  _id: staff._id,
+  id: staff.staffId || staff.id || staff._id,
+  name: staff.name || '',
+  designation: staff.designation || '',
+  subject: staff.subject || staff.appointedSubject || '',
+  role: staff.role ? staff.role[0].toUpperCase() + staff.role.slice(1) : 'Teacher',
+  mobile: staff.mobile || staff.phone || '',
+  email: staff.email || '',
+  joining: formatApiDate(staff.joining || staff.joiningDate),
+  status: staff.status || 'Active',
+});
+const normalizeBonafide = (certificate) => ({
+  ...certificate,
+  id: certificate.certificateNo || certificate.id || certificate._id,
+  studentId: certificate.student?.admissionNo || certificate.studentId || certificate.student?._id,
+  studentName: certificate.student?.name || certificate.studentName || '',
+  className: certificate.student?.className || certificate.className || '',
+  issuedOn: formatApiDate(certificate.issueDate || certificate.issuedOn),
+  issuedBy: certificate.issuedBy || '',
+});
+const studentToApi = (student) => ({
+  admissionNo: student.id,
+  name: student.name,
+  fatherName: student.guardian,
+  motherName: student.mother,
+  DOB: student.dob,
+  gender: student.gender,
+  className: student.className,
+  section: student.section,
+  rollNo: student.roll,
+  apaarId: student.apaar,
+  penNo: student.pen,
+  eshikshakoshId: student.eshiksha,
+  address: student.address,
+  mobile: student.mobile,
+  status: student.status || 'Active',
+});
+const staffToApi = (staff) => ({
+  staffId: staff.id,
+  name: staff.name,
+  designation: staff.designation,
+  subject: staff.subject,
+  role: String(staff.role || 'Teacher').toLowerCase(),
+  mobile: staff.mobile,
+  email: staff.email,
+  gender: staff.gender,
+  joiningDate: staff.joining,
+  status: staff.status || 'Active',
+});
 
 const INITIAL = {
   registrations: [
@@ -325,7 +421,47 @@ function usePersistentState() {
     } catch { return INITIAL; }
   });
   useEffect(() => { localStorage.setItem('uhs-demo-data', JSON.stringify(data)); }, [data]);
-  const update = (key, fn) => setData((current) => ({ ...current, [key]: fn(current[key]) }));
+  useEffect(() => {
+    if (!API_BASE_URL) return;
+    let mounted = true;
+    const loadDatabaseData = async () => {
+      try {
+        const [studentsPayload, staffPayload, bonafidePayload] = await Promise.all([
+          apiFetch('/students'),
+          apiFetch('/staff'),
+          apiFetch('/bonafide'),
+        ]);
+        if (!mounted) return;
+        setData((current) => ({
+          ...current,
+          students: listFromApi(studentsPayload, 'students').map(normalizeStudent),
+          teachers: listFromApi(staffPayload, 'staff').map(normalizeStaff),
+          bonafideCertificates: listFromApi(bonafidePayload, 'bonafide').map(normalizeBonafide),
+          databaseStatus: 'Connected',
+        }));
+      } catch (error) {
+        console.error('Database load failed:', error);
+        if (mounted) setData((current) => ({ ...current, databaseStatus: 'Offline' }));
+      }
+    };
+    loadDatabaseData();
+    return () => { mounted = false; };
+  }, []);
+  const syncDatabase = (key, previousRows = [], nextRows = []) => {
+    if (!API_BASE_URL || !['students', 'teachers', 'bonafideCertificates'].includes(key)) return;
+    const previousIds = new Set(previousRows.map((item) => item.id));
+    const addedRows = nextRows.filter((item) => item?.id && !previousIds.has(item.id));
+    addedRows.forEach((row) => {
+      if (key === 'students') apiFetch('/students', { method: 'POST', body: JSON.stringify(studentToApi(row)) }).catch((error) => console.error('Student sync failed:', error));
+      if (key === 'teachers') apiFetch('/staff', { method: 'POST', body: JSON.stringify(staffToApi(row)) }).catch((error) => console.error('Staff sync failed:', error));
+    });
+  };
+  const update = (key, fn) => setData((current) => {
+    const previousRows = current[key] || [];
+    const nextRows = fn(previousRows);
+    syncDatabase(key, previousRows, nextRows);
+    return { ...current, [key]: nextRows };
+  });
   const reset = () => { setData(INITIAL); localStorage.removeItem('uhs-demo-data'); };
   return { data, update, reset };
 }
@@ -842,9 +978,27 @@ function BonafideCertificates({role,data,update,notify}) {
   const courseName=examClassNumber(student?.className)>=11?`Intermediate ${examStream(student?.className)} programme`:'Secondary school programme';
   const certNo=`UHS/BON/${String(data.bonafideCertificates?.length||0).padStart(3,'0')}/${String((data.bonafideCertificates?.length||0)+1).padStart(3,'0')}`;
   const rows=activeStudents.filter((item)=>`${item.name} ${item.id} ${item.className} ${item.roll} ${item.guardian}`.toLowerCase().includes(search.trim().toLowerCase())).slice(0,80);
-  const saveIssue=()=>update('bonafideCertificates',(list=[])=>[{id:certNo,studentId:student.id,studentName:student.name,className:student.className,issuedOn:today,issuedBy,purpose,remarks},...list],{action:'INSERT',record:certNo,detail:`Bonafide certificate generated for ${student.name}`});
-  const generatePdf=()=>{
+  const saveIssue=async()=>{
+    const localIssue={id:certNo,studentId:student.id,studentName:student.name,className:student.className,issuedOn:today,issuedBy,purpose,remarks};
+    if (API_BASE_URL && student._id) {
+      try {
+        const payload = await apiFetch('/bonafide', {
+          method: 'POST',
+          body: JSON.stringify({ student: student._id, purpose, issuedBy, issuedRole: role, remarks }),
+        });
+        const saved = normalizeBonafide(payload.data || payload.bonafide || payload);
+        update('bonafideCertificates',(list=[])=>[saved,...list],{action:'INSERT',record:saved.id,detail:`Bonafide certificate generated for ${student.name}`});
+        return saved.id || certNo;
+      } catch (error) {
+        console.error('Bonafide sync failed:', error);
+      }
+    }
+    update('bonafideCertificates',(list=[])=>[localIssue,...list],{action:'INSERT',record:certNo,detail:`Bonafide certificate generated for ${student.name}`});
+    return certNo;
+  };
+  const generatePdf=async()=>{
     if(!student){notify('Select a student first');return;}
+    const issuedCertNo = await saveIssue();
     const doc=new jsPDF({unit:'mm',format:'a4'});
     const pageWidth=doc.internal.pageSize.getWidth();
     doc.setDrawColor(25,64,120);doc.setLineWidth(0.8);doc.rect(12,12,pageWidth-24,273);
@@ -853,7 +1007,7 @@ function BonafideCertificates({role,data,update,notify}) {
     doc.setFontSize(11);doc.text('Paraiya, Gaya, Bihar',pageWidth/2,30,{align:'center'});
     doc.setFont('helvetica','normal');doc.setFontSize(9);doc.text(`UDISE Code: ${UDISE_CODE} | Session: ${data.academicYear?.current||SESSION}`,pageWidth/2,36,{align:'center'});
     doc.setLineWidth(0.3);doc.line(18,46,pageWidth-18,46);
-    doc.setFontSize(10);doc.text(`Certificate No.: ${certNo}`,18,55);doc.text(`Date: ${today}`,pageWidth-18,55,{align:'right'});
+    doc.setFontSize(10);doc.text(`Certificate No.: ${issuedCertNo}`,18,55);doc.text(`Date: ${today}`,pageWidth-18,55,{align:'right'});
     doc.setFont('helvetica','bold');doc.setFontSize(18);doc.text('BONAFIDE CERTIFICATE',pageWidth/2,72,{align:'center'});
     doc.setFont('helvetica','normal');doc.setFontSize(12);
     const body=`This is to certify that Mr/Ms ${student.name}, bearing Registration No. ${student.registration||student.id}, is a bonafide student of this school, studying in Class ${student.className} under the ${courseName} during Academic Year ${data.academicYear?.current||SESSION}.`;
@@ -877,7 +1031,6 @@ function BonafideCertificates({role,data,update,notify}) {
     doc.text('Mobile: 9876543210',pageWidth-22,y+29,{align:'right'});
     doc.text('Email: uhs.phurhuriya@school.edu',pageWidth-22,y+36,{align:'right'});
     doc.setFontSize(9);doc.text('To be printed on official school letter pad.',pageWidth/2,278,{align:'center'});
-    saveIssue();
     doc.save(`${student.name.replaceAll(' ','_')}_Bonafide_Certificate.pdf`);
     notify(`Bonafide certificate generated for ${student.name}`);
   };
