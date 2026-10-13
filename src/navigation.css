@@ -1,0 +1,97 @@
+/* Shared workspace navigation: compact groups with a readable second level. */
+.organized-portal .portal-sidebar { width:280px; flex-basis:280px; }
+.organized-portal .portal-main { margin-left:280px; }
+.organized-portal .sidebar-brand { min-height:82px; padding:0 20px; }
+.organized-portal .sidebar-brand .brand strong { font-size:16px; }
+.organized-portal .sidebar-brand .brand span { font-size:12px; }
+.organized-portal .workspace-label { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:20px 20px 12px; font-size:12px; letter-spacing:.02em; color:#b8cbd5; text-transform:none; }
+.organized-portal .workspace-label small { font-size:12px; font-weight:500; color:#a8bdca; }
+.menu-search { display:flex; align-items:center; gap:8px; min-height:40px; margin:0 15px 16px; padding:0 10px; background:#16394c; border:1px solid #365566; border-radius:7px; color:#bad0dc; }
+.menu-search:focus-within { border-color:#78cfba; outline:2px solid #78cfba; outline-offset:2px; }
+.menu-search input { width:100%; min-width:0; padding:10px 0; color:white; font:inherit; font-size:14px; outline:none; border:0; background:transparent; }
+.menu-search input::placeholder { color:#bdcdd6; }
+.menu-search input::-webkit-search-cancel-button { display:none; }
+.menu-search button { display:grid; place-items:center; padding:5px; background:none; border:0; color:white; }
+.organized-portal .portal-sidebar nav { flex:1; min-height:0; gap:4px; padding:0 12px 16px; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:#527183 transparent; }
+.organized-portal .portal-sidebar nav button, .organized-portal .sidebar-bottom button { width:100%; min-height:43px; height:auto; padding:10px 12px; gap:11px; font-size:14px; line-height:1.4; color:#d4e0e7; flex-shrink:0; }
+.organized-portal .portal-sidebar nav button svg, .organized-portal .sidebar-bottom button svg { flex-shrink:0; }
+.organized-portal .portal-sidebar nav button span { flex:1; }
+.organized-portal .portal-sidebar nav .nav-dashboard { margin-bottom:9px; color:#fff; }
+.organized-portal .portal-sidebar nav .nav-group-toggle { color:#d4e0e7; font-weight:650; }
+.organized-portal .nav-group-toggle > svg:last-child { margin-left:auto; transition:transform .15s ease; }
+.organized-portal .nav-group-toggle[aria-expanded="true"] > svg:last-child { transform:rotate(90deg); }
+.organized-portal .contains-active .nav-group-toggle { color:#8ee0c8 !important; }
+.organized-portal .portal-sidebar nav .nav-group-toggle:hover { background:#163e52; }
+.nav-submenu { display:flex; flex-direction:column; gap:2px; margin:4px 0 10px 20px; padding-left:12px; border-left:1px solid #345264; }
+.nav-submenu[hidden] { display:none; }
+.organized-portal .portal-sidebar nav .nav-submenu button { font-size:14px; font-weight:500; min-height:39px; padding:9px 11px; color:#bcd0da; }
+.organized-portal .portal-sidebar nav button.active, .organized-portal .sidebar-bottom button.active { background:#214c60; color:white; box-shadow:inset 3px 0 0 #77d8b9; }
+.organized-portal .portal-sidebar nav button b { min-width:21px; width:auto; padding:0 5px; height:21px; font-size:12px; border-radius:5px; background:#f5cd87; color:#46320c; }
+.organized-portal .portal-sidebar button:focus-visible { outline:2px solid #a1e9d3; outline-offset:-2px; }
+.organized-portal .sidebar-bottom { flex-shrink:0; padding:12px; background:#0b2637; }
+.menu-empty { margin:5px 12px; color:#c5d5de; font-size:14px; line-height:1.6; }
+.organized-portal .portal-header { min-height:82px; height:auto; gap:20px; padding:16px 28px; }
+.organized-portal .portal-title { min-width:0; }
+.organized-portal .portal-title > div > span { font-size:12px; color:#637986; margin-bottom:6px; }
+.portal-breadcrumb { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.organized-portal .portal-breadcrumb > span { font-size:14px; color:#657c89; margin:0; }
+.organized-portal .portal-breadcrumb strong { font-size:16px; line-height:1.4; }
+.portal-breadcrumb svg { color:#91a1ab; flex-shrink:0; }
+.organized-portal .search-btn { font-size:14px; min-width:180px; height:40px; color:#526975; }
+.organized-portal .search-btn kbd { font-size:12px; }
+.organized-portal .notification-btn { width:40px; height:40px; }
+.organized-portal .user-chip strong { font-size:13px; }
+.organized-portal .user-chip small { font-size:12px; color:#667c88; }
+.organized-portal .user-chip > span { font-size:13px; width:38px; height:38px; }
+.organized-portal .portal-content:focus { outline:none; }
+.organized-portal .sidebar-scrim { display:none; }
+
+/* Public pages keep their established purple theme and share one short menu. */
+.modern-public .organized-public-nav { gap:4px; }
+.modern-public .organized-public-nav > button, .public-nav-group > summary { font-size:14px; font-weight:650; padding:0 12px; min-height:44px; }
+.public-nav-group { position:relative; display:flex; align-items:stretch; }
+.public-nav-group > summary { display:flex; align-items:center; height:100%; box-sizing:border-box; gap:7px; cursor:pointer; color:#45545f; list-style:none; }
+.public-nav-group > summary::-webkit-details-marker { display:none; }
+.public-nav-group > summary > svg { transform:rotate(90deg); transition:transform .15s ease; }
+.public-nav-group[open] > summary > svg { transform:rotate(-90deg); }
+.public-nav-group > summary.active, .public-nav-group > summary:hover, .public-nav-group[open] > summary { color:var(--purple); }
+.public-nav-group > summary:focus-visible, .modern-public .organized-public-nav button:focus-visible { outline:2px solid var(--purple); outline-offset:-3px; border-radius:5px; }
+.public-submenu { position:absolute; z-index:45; top:calc(100% - 5px); left:0; width:255px; padding:8px; border:1px solid #e4deef; border-radius:10px; background:#fff; box-shadow:0 12px 32px #21114320; }
+.modern-public .public-submenu button { display:block; width:100%; height:auto; min-height:43px; white-space:normal; padding:11px 12px; text-align:left; font-size:14px; border-radius:6px; }
+.modern-public .public-submenu button::after { display:none; }
+.modern-public .public-submenu button:hover, .modern-public .public-submenu button.active { background:#f1edf9; color:var(--purple); }
+
+@media (max-width:1200px) {
+  .organized-portal .search-btn { min-width:40px; width:40px; justify-content:center; padding:0; }
+  .organized-portal .search-btn span, .organized-portal .search-btn kbd { display:none; }
+  .modern-public .organized-public-nav > button, .public-nav-group > summary { padding:0 8px; }
+}
+@media (max-width:1050px) {
+  .public-nav-group { display:block; }
+  .public-nav-group > summary { min-height:46px; padding:10px; justify-content:space-between; }
+  .public-submenu { position:static; width:auto; margin:0 5px 8px 16px; box-shadow:none; border:0; border-left:2px solid #daceed; border-radius:0; padding:0 0 0 8px; }
+  .modern-public .organized-public-nav { max-height:calc(100dvh - 110px); overflow-y:auto; overscroll-behavior:contain; }
+  .modern-public .organized-public-nav > button { font-size:14px; min-height:44px; }
+}
+@media (max-width:960px) {
+  .organized-portal .portal-sidebar { width:min(300px, 88vw); transform:translateX(-100%); }
+  .organized-portal .portal-sidebar.open { transform:translateX(0); }
+  .organized-portal .portal-main { margin-left:0; }
+  .organized-portal .sidebar-close { display:grid; place-items:center; min-width:32px; height:36px; }
+  .organized-portal .sidebar-scrim { display:block; border:0; position:fixed; inset:0; z-index:40; background:#04131d80; }
+  .organized-portal .portal-menu { display:grid; place-items:center; flex-shrink:0; }
+  .organized-portal .portal-header { padding:14px 18px; gap:12px; }
+  .organized-portal .search-btn, .organized-portal .user-chip > div { display:none; }
+  .organized-portal .portal-header-actions { gap:8px; }
+}
+@media (max-width:560px) {
+  .organized-portal .portal-header { align-items:flex-start; }
+  .organized-portal .portal-title > div > span { font-size:12px; line-height:1.45; }
+  .organized-portal .portal-breadcrumb strong { font-size:14px; }
+  .organized-portal .portal-breadcrumb > span { font-size:12px; }
+  .organized-portal .user-chip { display:none; }
+  .organized-portal .portal-content { padding:24px 16px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .organized-portal .portal-sidebar, .organized-portal .nav-group-toggle > svg, .public-nav-group > summary > svg { transition:none; }
+}
